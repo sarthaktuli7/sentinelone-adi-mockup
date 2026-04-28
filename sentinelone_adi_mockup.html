@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SentinelOne — Analyst Decision Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #090B10;
+  --bg2:       #0D1018;
+  --bg3:       #12151F;
+  --bg4:       #181C28;
+  --border:    #1E2535;
+  --border2:   #252D40;
+  --s1-purple: #8B5CF6;
+  --s1-violet: #7C3AED;
+  --s1-grape:  #4C1D95;
+  --s1-glow:   rgba(139,92,246,0.15);
+  --s1-glow2:  rgba(139,92,246,0.06);
+  --green:     #10B981;
+  --green-bg:  rgba(16,185,129,0.08);
+  --green-dim: rgba(16,185,129,0.15);
+  --red:       #EF4444;
+  --red-bg:    rgba(239,68,68,0.08);
+  --amber:     #F59E0B;
+  --amber-bg:  rgba(245,158,11,0.08);
+  --cyan:      #06B6D4;
+  --cyan-bg:   rgba(6,182,212,0.08);
+  --blue:      #3B82F6;
+  --blue-bg:   rgba(59,130,246,0.08);
+  --txt:       #E2E8F0;
+  --txt2:      #94A3B8;
+  --txt3:      #4B5563;
+  --font:      'IBM Plex Sans', sans-serif;
+  --mono:      'IBM Plex Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--txt);
+  font-size: 13px;
+  line-height: 1.5;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── SCANLINE OVERLAY ──────────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ── TOPBAR ────────────────────────────────────────────────── */
+.topbar {
+  height: 48px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 0;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.topbar::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--s1-purple), transparent);
+  opacity: 0.4;
+}
+
+.logo-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: 24px;
+}
+
+.logo-icon {
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, var(--s1-violet), var(--s1-purple));
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  font-family: var(--mono);
+  box-shadow: 0 0 12px rgba(139,92,246,0.4);
+}
+
+.logo-text {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--txt);
+  letter-spacing: 0.05em;
+}
+
+.logo-text span { color: var(--s1-purple); }
+
+.nav-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border2);
+  margin: 0 16px;
+}
+
+.nav-item {
+  font-size: 12px;
+  color: var(--txt3);
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--mono);
+  letter-spacing: 0.03em;
+  transition: all 0.15s;
+}
+
+.nav-item:hover { color: var(--txt2); background: var(--bg3); }
+.nav-item.active { color: var(--s1-purple); background: var(--s1-glow2); }
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.adi-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: var(--s1-glow);
+  border: 1px solid rgba(139,92,246,0.3);
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--s1-purple);
+  font-family: var(--mono);
+  letter-spacing: 0.05em;
+}
+
+.pulse-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--s1-purple);
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%,100% { box-shadow: 0 0 4px var(--s1-purple); opacity: 1; }
+  50% { box-shadow: 0 0 10px var(--s1-purple); opacity: 0.6; }
+}
+
+.topbar-stat {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--txt3);
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg3);
+}
+
+.topbar-stat .val { color: var(--green); font-weight: 600; }
+.topbar-stat .val.amber { color: var(--amber); }
+
+.avatar {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--s1-grape), var(--s1-violet));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #fff;
+  font-family: var(--mono);
+}
+
+/* ── BODY LAYOUT ───────────────────────────────────────────── */
+.app-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── LEFT SIDEBAR ──────────────────────────────────────────── */
+.sidebar {
+  width: 200px;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  padding: 12px 0;
+  overflow-y: auto;
+}
+
+.sb-section { font-size: 9.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--txt3); padding: 10px 14px 5px; font-family: var(--mono); }
+
+.sb-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 14px;
+  font-size: 12px; font-family: var(--mono);
+  color: var(--txt3); cursor: pointer;
+  transition: all 0.12s;
+  position: relative;
+}
+
+.sb-item:hover { color: var(--txt2); background: var(--bg3); }
+
+.sb-item.active {
+  color: var(--s1-purple);
+  background: var(--s1-glow2);
+}
+
+.sb-item.active::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--s1-purple);
+  box-shadow: 0 0 8px var(--s1-purple);
+}
+
+.sb-badge {
+  margin-left: auto;
+  font-size: 9.5px; font-weight: 600;
+  padding: 1px 6px; border-radius: 8px;
+  background: var(--s1-glow);
+  color: var(--s1-purple);
+  border: 1px solid rgba(139,92,246,0.2);
+}
+
+.sb-badge.red { background: var(--red-bg); color: var(--red); border-color: rgba(239,68,68,0.2); }
+.sb-badge.green { background: var(--green-bg); color: var(--green); border-color: rgba(16,185,129,0.2); }
+.sb-badge.amber { background: var(--amber-bg); color: var(--amber); border-color: rgba(245,158,11,0.2); }
+
+.sb-divider { height: 1px; background: var(--border); margin: 8px 0; }
+
+/* ── MAIN ──────────────────────────────────────────────────── */
+.main { flex: 1; display: flex; overflow: hidden; }
+
+/* ── CENTER ────────────────────────────────────────────────── */
+.center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid var(--border);
+}
+
+.center-head {
+  padding: 14px 18px 10px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.center-head-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.page-title {
+  font-size: 14px; font-weight: 600;
+  color: var(--txt); letter-spacing: -0.2px;
+  display: flex; align-items: center; gap: 8px;
+}
+
+.title-tag {
+  font-size: 9.5px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 3px;
+  background: var(--s1-glow); color: var(--s1-purple);
+  border: 1px solid rgba(139,92,246,0.25);
+  font-family: var(--mono);
+}
+
+.btn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 12px; border-radius: 5px;
+  font-size: 11.5px; font-weight: 500;
+  font-family: var(--mono); cursor: pointer;
+  border: 1px solid var(--border2);
+  background: var(--bg3); color: var(--txt2);
+  transition: all 0.15s; letter-spacing: 0.02em;
+}
+
+.btn:hover { border-color: var(--border2); background: var(--bg4); color: var(--txt); }
+.btn.pri { background: var(--s1-grape); border-color: var(--s1-violet); color: #fff; }
+.btn.pri:hover { background: var(--s1-violet); box-shadow: 0 0 12px rgba(139,92,246,0.3); }
+
+.filter-row {
+  display: flex; align-items: center; gap: 8px;
+}
+
+.filter-tabs {
+  display: flex; gap: 2px;
+  background: var(--bg); border: 1px solid var(--border);
+  padding: 3px; border-radius: 6px;
+}
+
+.ftab {
+  padding: 3px 10px; border-radius: 4px;
+  font-size: 11px; font-weight: 500; font-family: var(--mono);
+  color: var(--txt3); cursor: pointer; background: none; border: none;
+  transition: all 0.15s; letter-spacing: 0.03em;
+}
+
+.ftab.active { background: var(--bg4); color: var(--s1-purple); border: 1px solid rgba(139,92,246,0.2); }
+.ftab:hover:not(.active) { color: var(--txt2); }
+
+.stat-chips { display: flex; gap: 8px; margin-left: auto; }
+.schip {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; font-family: var(--mono); color: var(--txt3);
+}
+.sdot { width: 6px; height: 6px; border-radius: 50%; }
+
+/* ── ALERT TABLE ───────────────────────────────────────────── */
+.center-body { flex: 1; overflow-y: auto; padding: 10px 12px; }
+
+.table-head {
+  display: grid;
+  grid-template-columns: 28px 1fr 80px 90px 70px 90px 80px;
+  gap: 0;
+  padding: 6px 10px;
+  font-size: 9.5px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--txt3); font-family: var(--mono);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+.alert-row {
+  display: grid;
+  grid-template-columns: 28px 1fr 80px 90px 70px 90px 80px;
+  gap: 0;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.12s;
+  margin-bottom: 3px;
+  align-items: center;
+  animation: fadeIn 0.3s ease both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(-4px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.alert-row:nth-child(1) { animation-delay: 0.04s; }
+.alert-row:nth-child(2) { animation-delay: 0.08s; }
+.alert-row:nth-child(3) { animation-delay: 0.12s; }
+.alert-row:nth-child(4) { animation-delay: 0.16s; }
+.alert-row:nth-child(5) { animation-delay: 0.20s; }
+.alert-row:nth-child(6) { animation-delay: 0.24s; }
+.alert-row:nth-child(7) { animation-delay: 0.28s; }
+
+.alert-row:hover { background: var(--bg3); border-color: var(--border); }
+.alert-row.selected { background: var(--s1-glow2); border-color: rgba(139,92,246,0.3); }
+
+.sev-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.alert-info { min-width: 0; }
+.alert-name {
+  font-size: 12px; font-weight: 500; color: var(--txt);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-family: var(--mono); margin-bottom: 1px;
+}
+.alert-host { font-size: 10.5px; color: var(--txt3); font-family: var(--mono); }
+
+.sev-tag {
+  display: inline-flex; padding: 2px 7px; border-radius: 3px;
+  font-size: 10px; font-weight: 600; font-family: var(--mono);
+  letter-spacing: 0.04em; white-space: nowrap;
+}
+
+.decision-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 7px; border-radius: 3px;
+  font-size: 10px; font-weight: 600; font-family: var(--mono);
+  white-space: nowrap;
+}
+
+.conf-cell { font-family: var(--mono); font-size: 11px; }
+
+.feedback-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 7px; border-radius: 3px;
+  font-size: 10px; font-weight: 600; font-family: var(--mono);
+  white-space: nowrap;
+}
+
+.feedback-tag.captured { background: var(--green-dim); color: var(--green); border: 1px solid rgba(16,185,129,0.25); }
+.feedback-tag.pending  { background: var(--amber-bg);  color: var(--amber); border: 1px solid rgba(245,158,11,0.2); }
+.feedback-tag.queued   { background: var(--bg4); color: var(--txt3); border: 1px solid var(--border); }
+
+.time-cell { font-family: var(--mono); font-size: 10.5px; color: var(--txt3); }
+
+/* ── ADI METRICS STRIP ─────────────────────────────────────── */
+.metrics-strip {
+  margin-top: 14px;
+  padding: 10px 12px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.metrics-strip-label {
+  font-size: 9.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--txt3); font-family: var(--mono); margin-bottom: 10px;
+}
+
+.metrics-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+}
+
+.metric-tile {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px 12px;
+}
+
+.metric-tile-val {
+  font-size: 22px; font-weight: 700; font-family: var(--mono);
+  color: var(--txt); line-height: 1; margin-bottom: 4px;
+  display: block;
+}
+
+.metric-tile-val.purple { color: var(--s1-purple); }
+.metric-tile-val.green  { color: var(--green); }
+.metric-tile-val.amber  { color: var(--amber); }
+.metric-tile-val.cyan   { color: var(--cyan); }
+
+.metric-tile-label { font-size: 10px; color: var(--txt3); font-family: var(--mono); line-height: 1.3; }
+.metric-tile-trend { font-size: 9.5px; margin-top: 4px; font-family: var(--mono); }
+.metric-tile-trend.up   { color: var(--green); }
+.metric-tile-trend.down { color: var(--red); }
+.metric-tile-trend.neu  { color: var(--txt3); }
+
+/* ── RIGHT PANEL ───────────────────────────────────────────── */
+.right-panel {
+  width: 370px; flex-shrink: 0;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  background: var(--bg2);
+}
+
+.panel-tabs {
+  display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+
+.ptab {
+  flex: 1; padding: 10px 8px; text-align: center;
+  font-size: 11px; font-weight: 500; font-family: var(--mono);
+  color: var(--txt3); cursor: pointer;
+  border-bottom: 2px solid transparent;
+  background: none; border-top: none; border-left: none; border-right: none;
+  transition: all 0.15s; letter-spacing: 0.03em;
+}
+
+.ptab.active { color: var(--s1-purple); border-bottom-color: var(--s1-purple); background: var(--s1-glow2); }
+.ptab:hover:not(.active) { color: var(--txt2); }
+
+.panel-body { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+
+/* ── ALERT DETAIL ──────────────────────────────────────────── */
+.alert-detail-header {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px; background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.alert-sev-icon {
+  width: 36px; height: 36px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+  background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2);
+}
+
+.alert-detail-name { font-size: 12.5px; font-weight: 600; color: var(--txt); font-family: var(--mono); margin-bottom: 3px; line-height: 1.3; }
+.alert-detail-host { font-size: 10.5px; color: var(--txt3); font-family: var(--mono); }
+
+/* ── ADI CARD ──────────────────────────────────────────────── */
+.adi-card {
+  background: linear-gradient(135deg, #0A0514 0%, #0F0A1E 50%, #0A1020 100%);
+  border: 1px solid rgba(139,92,246,0.3);
+  border-radius: 8px; padding: 14px;
+  position: relative; overflow: hidden;
+}
+
+.adi-card::before {
+  content: '';
+  position: absolute; top: -30px; right: -30px;
+  width: 100px; height: 100px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%);
+}
+
+.adi-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.adi-card-title {
+  font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  color: rgba(139,92,246,0.7); font-family: var(--mono);
+}
+
+.adi-model-badge {
+  font-size: 9px; font-family: var(--mono); padding: 2px 7px;
+  border-radius: 3px; background: rgba(139,92,246,0.1);
+  border: 1px solid rgba(139,92,246,0.2); color: rgba(139,92,246,0.8);
+}
+
+/* Confidence ring */
+.conf-ring-wrap {
+  display: flex; align-items: center; gap: 14px; margin-bottom: 12px;
+}
+
+.conf-ring {
+  position: relative; width: 60px; height: 60px; flex-shrink: 0;
+}
+
+.conf-ring svg { transform: rotate(-90deg); }
+
+.conf-ring-val {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; font-family: var(--mono);
+  color: var(--s1-purple);
+}
+
+.conf-ring-info { flex: 1; }
+.conf-ring-label { font-size: 10px; color: rgba(255,255,255,0.4); font-family: var(--mono); margin-bottom: 4px; }
+.conf-ring-result { font-size: 16px; font-weight: 700; color: #fff; font-family: var(--mono); margin-bottom: 2px; }
+.conf-ring-sub { font-size: 10.5px; color: rgba(255,255,255,0.5); font-family: var(--mono); }
+
+.adi-bars { margin-bottom: 12px; }
+.adi-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.adi-bar-label { font-size: 10px; font-family: var(--mono); color: rgba(255,255,255,0.45); width: 110px; flex-shrink: 0; }
+.adi-bar-track { flex: 1; height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
+.adi-bar-fill { height: 100%; border-radius: 2px; transition: width 1.2s cubic-bezier(.4,0,.2,1); }
+.adi-bar-val { font-size: 10px; font-family: var(--mono); color: rgba(255,255,255,0.6); width: 28px; text-align: right; }
+
+.adi-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+.atag {
+  font-size: 9.5px; padding: 2px 7px; border-radius: 3px;
+  background: rgba(139,92,246,0.08); color: rgba(139,92,246,0.8);
+  border: 1px solid rgba(139,92,246,0.15); font-family: var(--mono);
+}
+
+/* ── FEEDBACK CAPTURE ──────────────────────────────────────── */
+.feedback-card {
+  border: 1px solid var(--border2); border-radius: 8px; overflow: hidden;
+}
+
+.fc-header {
+  padding: 9px 12px; background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.fc-title { font-size: 10px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--txt3); font-family: var(--mono); }
+.fc-status { font-size: 9.5px; color: var(--amber); font-family: var(--mono); display: flex; align-items: center; gap: 4px; }
+.fc-status-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--amber); animation: glow-pulse 1.5s ease-in-out infinite; }
+
+.fc-body { padding: 12px; }
+
+.decision-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+
+.dec-btn {
+  padding: 9px 8px; border-radius: 6px;
+  font-size: 11px; font-weight: 600; font-family: var(--mono);
+  cursor: pointer; border: 1px solid; text-align: center;
+  transition: all 0.15s; letter-spacing: 0.02em;
+}
+
+.dec-btn.tp {
+  background: var(--green-bg); border-color: rgba(16,185,129,0.3); color: var(--green);
+}
+.dec-btn.tp:hover { background: var(--green-dim); box-shadow: 0 0 10px rgba(16,185,129,0.2); }
+
+.dec-btn.fp {
+  background: var(--red-bg); border-color: rgba(239,68,68,0.3); color: var(--red);
+}
+.dec-btn.fp:hover { background: rgba(239,68,68,0.15); }
+
+.dec-btn.tune {
+  background: var(--amber-bg); border-color: rgba(245,158,11,0.3); color: var(--amber);
+}
+.dec-btn.tune:hover { background: rgba(245,158,11,0.15); }
+
+.dec-btn.esc {
+  background: var(--s1-glow); border-color: rgba(139,92,246,0.3); color: var(--s1-purple);
+}
+.dec-btn.esc:hover { background: rgba(139,92,246,0.15); }
+
+.feedback-flow-label {
+  font-size: 9.5px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--txt3); font-family: var(--mono); margin-bottom: 8px;
+}
+
+.feedback-flow { display: flex; flex-direction: column; gap: 0; }
+
+.ff-step {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding-bottom: 12px; position: relative;
+}
+
+.ff-step:last-child { padding-bottom: 0; }
+
+.ff-left { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+
+.ff-dot {
+  width: 20px; height: 20px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700; font-family: var(--mono);
+  flex-shrink: 0; z-index: 1;
+}
+
+.ff-dot.done { background: var(--green); color: #000; box-shadow: 0 0 6px rgba(16,185,129,0.4); }
+.ff-dot.active { background: var(--s1-purple); color: #fff; box-shadow: 0 0 8px rgba(139,92,246,0.5); animation: glow-pulse 2s ease-in-out infinite; }
+.ff-dot.pending { background: var(--bg4); border: 1px solid var(--border2); color: var(--txt3); }
+
+.ff-line {
+  width: 1px; flex: 1; background: var(--border); margin: 2px 0;
+  min-height: 10px;
+}
+
+.ff-line.done { background: var(--green); opacity: 0.3; }
+
+.ff-content { flex: 1; padding-top: 1px; }
+.ff-title { font-size: 11.5px; font-weight: 600; color: var(--txt); font-family: var(--mono); margin-bottom: 2px; }
+.ff-desc { font-size: 10.5px; color: var(--txt3); font-family: var(--mono); line-height: 1.4; }
+.ff-time { font-size: 9.5px; color: var(--txt3); font-family: var(--mono); margin-top: 2px; }
+.ff-time.active-t { color: var(--s1-purple); }
+
+/* ── LEARNING ENGINE CARD ──────────────────────────────────── */
+.learning-card {
+  border: 1px solid var(--border2); border-radius: 8px; overflow: hidden;
+}
+
+.lc-header {
+  padding: 9px 12px; background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.lc-title { font-size: 10px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--txt3); font-family: var(--mono); }
+
+.live-badge {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 9.5px; font-weight: 600; color: var(--green); font-family: var(--mono);
+}
+
+.live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); animation: glow-pulse 1.5s ease-in-out infinite; }
+
+.lc-body { padding: 12px; }
+
+.tenant-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+  padding: 6px 8px; background: var(--bg3); border-radius: 5px;
+  border: 1px solid var(--border);
+}
+
+.tenant-name { font-size: 10.5px; font-family: var(--mono); color: var(--txt2); flex: 1; }
+.tenant-fp-delta { font-size: 10px; font-family: var(--mono); color: var(--green); font-weight: 600; white-space: nowrap; }
+.tenant-bar-wrap { width: 60px; }
+.tenant-bar-track { height: 3px; background: var(--bg4); border-radius: 2px; overflow: hidden; }
+.tenant-bar-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--s1-purple), var(--cyan)); transition: width 1.5s ease; }
+
+.learning-summary {
+  padding: 10px; background: var(--bg3); border-radius: 6px;
+  border: 1px solid rgba(139,92,246,0.15); margin-top: 8px;
+}
+
+.ls-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.ls-row:last-child { margin-bottom: 0; }
+.ls-label { font-size: 10px; color: var(--txt3); font-family: var(--mono); }
+.ls-val { font-size: 10.5px; font-weight: 600; font-family: var(--mono); color: var(--s1-purple); }
+.ls-val.green { color: var(--green); }
+.ls-val.cyan { color: var(--cyan); }
+
+/* ── AUDIT FEED ────────────────────────────────────────────── */
+.audit-feed { border: 1px solid var(--border2); border-radius: 8px; overflow: hidden; }
+.af-header { padding: 9px 12px; background: var(--bg3); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.af-title { font-size: 10px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--txt3); font-family: var(--mono); }
+.af-body { padding: 10px 12px; }
+.af-row { display: flex; align-items: flex-start; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 10.5px; }
+.af-row:last-child { border-bottom: none; }
+.af-time { color: var(--txt3); font-family: var(--mono); width: 48px; flex-shrink: 0; font-size: 9.5px; margin-top: 1px; }
+.af-event { color: var(--txt2); flex: 1; font-family: var(--mono); line-height: 1.4; }
+.af-event strong { color: var(--txt); }
+.af-actor { font-size: 9px; font-weight: 600; padding: 1px 6px; border-radius: 3px; font-family: var(--mono); flex-shrink: 0; }
+.af-actor.ai { background: var(--s1-glow); color: var(--s1-purple); border: 1px solid rgba(139,92,246,0.2); }
+.af-actor.analyst { background: var(--cyan-bg); color: var(--cyan); border: 1px solid rgba(6,182,212,0.2); }
+.af-actor.sys { background: var(--bg4); color: var(--txt3); border: 1px solid var(--border); }
+
+/* ── STATUS BAR ────────────────────────────────────────────── */
+.statusbar {
+  height: 26px; background: var(--bg2);
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 14px; gap: 16px; flex-shrink: 0;
+}
+
+.sb2-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--txt3); font-family: var(--mono); }
+.sb2-dot { width: 5px; height: 5px; border-radius: 50%; }
+.sb2-dot.green { background: var(--green); box-shadow: 0 0 4px var(--green); }
+.sb2-dot.purple { background: var(--s1-purple); animation: glow-pulse 2s ease-in-out infinite; }
+.sb2-dot.amber { background: var(--amber); }
+
+/* ── SCROLLBAR ─────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* ── DECISION MODAL ────────────────────────────────────────── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(5,7,15,0.8); z-index: 1000;
+  align-items: center; justify-content: center;
+  backdrop-filter: blur(6px);
+}
+
+.modal-overlay.show { display: flex; }
+
+.modal {
+  background: var(--bg2); border: 1px solid rgba(139,92,246,0.3);
+  border-radius: 12px; width: 500px; max-width: 95vw;
+  box-shadow: 0 0 40px rgba(139,92,246,0.15), 0 20px 60px rgba(0,0,0,0.5);
+  overflow: hidden;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-head {
+  padding: 14px 18px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  background: linear-gradient(135deg, rgba(139,92,246,0.08), transparent);
+}
+
+.modal-title { font-size: 13px; font-weight: 600; color: var(--txt); font-family: var(--mono); }
+.modal-close { background: none; border: none; color: var(--txt3); font-size: 18px; cursor: pointer; }
+
+.modal-body { padding: 18px; }
+
+.modal-alert-info {
+  padding: 12px; background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 7px; margin-bottom: 14px;
+  display: flex; align-items: flex-start; gap: 10px;
+}
+
+.modal-sev-icon {
+  width: 36px; height: 36px; border-radius: 7px;
+  background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+}
+
+.modal-alert-name { font-size: 12px; font-weight: 600; color: var(--txt); font-family: var(--mono); margin-bottom: 3px; }
+.modal-alert-meta { font-size: 10.5px; color: var(--txt3); font-family: var(--mono); }
+
+.modal-section-label {
+  font-size: 9.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--txt3); font-family: var(--mono); margin-bottom: 8px;
+}
+
+.modal-ai-reason {
+  padding: 10px 12px;
+  background: rgba(139,92,246,0.05); border: 1px solid rgba(139,92,246,0.15);
+  border-radius: 6px; font-size: 11px; font-family: var(--mono);
+  color: rgba(255,255,255,0.55); line-height: 1.6; margin-bottom: 14px;
+}
+
+.modal-decision-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+
+.modal-dec-btn {
+  padding: 11px 12px; border-radius: 7px;
+  font-size: 11px; font-weight: 600; font-family: var(--mono);
+  cursor: pointer; border: 1px solid; text-align: center;
+  transition: all 0.15s;
+}
+
+.modal-dec-btn.tp { background: var(--green-bg); border-color: rgba(16,185,129,0.3); color: var(--green); }
+.modal-dec-btn.tp:hover { background: var(--green-dim); box-shadow: 0 0 12px rgba(16,185,129,0.2); }
+.modal-dec-btn.fp { background: var(--red-bg); border-color: rgba(239,68,68,0.3); color: var(--red); }
+.modal-dec-btn.fp:hover { background: rgba(239,68,68,0.15); }
+.modal-dec-btn.tune { background: var(--amber-bg); border-color: rgba(245,158,11,0.3); color: var(--amber); }
+.modal-dec-btn.tune:hover { background: rgba(245,158,11,0.15); }
+.modal-dec-btn.esc { background: var(--s1-glow); border-color: rgba(139,92,246,0.3); color: var(--s1-purple); }
+.modal-dec-btn.esc:hover { background: rgba(139,92,246,0.15); }
+
+.modal-feedback-note {
+  padding: 10px 12px; background: var(--bg3);
+  border: 1px solid rgba(139,92,246,0.15); border-radius: 6px;
+  font-size: 10.5px; color: var(--txt3); font-family: var(--mono); line-height: 1.5;
+}
+
+.modal-feedback-note strong { color: var(--s1-purple); }
+
+.modal-foot {
+  padding: 12px 18px; border-top: 1px solid var(--border);
+  background: var(--bg3);
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.modal-foot-note { font-size: 10px; color: var(--txt3); font-family: var(--mono); }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo-wrap">
+    <div class="logo-icon">S1</div>
+    <div class="logo-text">SENTINEL<span>ONE</span></div>
+  </div>
+  <div class="nav-divider"></div>
+  <div class="nav-item">Singularity</div>
+  <div class="nav-divider"></div>
+  <div class="nav-item active">ADI · Decision Intelligence</div>
+  <div class="nav-divider"></div>
+  <div class="nav-item">Threat Hunting</div>
+  <div class="nav-item">Storyline</div>
+  <div class="nav-item">Purple AI</div>
+
+  <div class="topbar-right">
+    <div class="adi-badge"><div class="pulse-dot"></div>ADI ACTIVE</div>
+    <div class="topbar-stat">FP Rate <span class="val">↓ 38%</span></div>
+    <div class="topbar-stat">Decisions fed back <span class="val">1,247</span></div>
+    <div class="topbar-stat">Queue <span class="val amber">4</span></div>
+    <div class="avatar">ST</div>
+  </div>
+</div>
+
+<!-- BODY -->
+<div class="app-body">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-section">Singularity TDR</div>
+    <div class="sb-item active"><span>⬡</span> Decision Intelligence <span class="sb-badge">4</span></div>
+    <div class="sb-item"><span>◈</span> Alert Queue <span class="sb-badge red">12</span></div>
+    <div class="sb-item"><span>⚡</span> Storyline</div>
+    <div class="sb-item"><span>◎</span> Threat Hunting</div>
+
+    <div class="sb-divider"></div>
+    <div class="sb-section">MDR / Vigilance</div>
+    <div class="sb-item"><span>⊞</span> Active Incidents <span class="sb-badge amber">3</span></div>
+    <div class="sb-item"><span>↻</span> Analyst Queue</div>
+    <div class="sb-item"><span>◉</span> MTTR Tracker</div>
+
+    <div class="sb-divider"></div>
+    <div class="sb-section">ADI Feedback</div>
+    <div class="sb-item"><span>⟳</span> Learning Engine <span class="sb-badge green">On</span></div>
+    <div class="sb-item"><span>⊕</span> Tenant Tuning</div>
+    <div class="sb-item"><span>△</span> Model Drift</div>
+    <div class="sb-item"><span>⊗</span> FP/TP History</div>
+
+    <div class="sb-divider"></div>
+    <div class="sb-section">Platform</div>
+    <div class="sb-item"><span>🔒</span> Governance</div>
+    <div class="sb-item"><span>⊙</span> Integrations</div>
+    <div class="sb-item"><span>◎</span> Settings</div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- CENTER: ALERT TABLE -->
+    <div class="center">
+      <div class="center-head">
+        <div class="center-head-top">
+          <div class="page-title">
+            Analyst Decision Queue
+            <span class="title-tag">ADI ENABLED</span>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn">↓ Export</button>
+            <button class="btn">⊞ Filter</button>
+            <button class="btn pri" onclick="document.getElementById('decisionModal').classList.add('show')">⚡ Review Top Alert</button>
+          </div>
+        </div>
+        <div class="filter-row">
+          <div class="filter-tabs">
+            <button class="ftab active">All Alerts</button>
+            <button class="ftab">Awaiting Decision</button>
+            <button class="ftab">Feedback Captured</button>
+            <button class="ftab">Retraining</button>
+          </div>
+          <div class="stat-chips">
+            <div class="schip"><div class="sdot" style="background:var(--red)"></div>Critical: 3</div>
+            <div class="schip"><div class="sdot" style="background:var(--amber)"></div>High: 9</div>
+            <div class="schip"><div class="sdot" style="background:var(--green)"></div>Feedback sent: 1,247</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="center-body">
+
+        <div class="table-head">
+          <div></div>
+          <div>ALERT / HOST</div>
+          <div>SEVERITY</div>
+          <div>AI DECISION</div>
+          <div>CONF.</div>
+          <div>ADI FEEDBACK</div>
+          <div>TIME</div>
+        </div>
+
+        <!-- ALERT ROWS -->
+        <div class="alert-row selected" onclick="selectAlert(this)">
+          <div class="sev-dot" style="background:var(--red);box-shadow:0 0 5px var(--red)"></div>
+          <div class="alert-info">
+            <div class="alert-name">Credential Dumping via LSASS · Mimikatz Signature</div>
+            <div class="alert-host">WIN-PROD-DB-042 · AstraZeneca-US · endpoint</div>
+          </div>
+          <div><span class="sev-tag" style="background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.2)">CRITICAL</span></div>
+          <div><span class="decision-tag" style="background:var(--red-bg);color:var(--red);border:1px solid rgba(239,68,68,0.2)">⚑ True Positive</span></div>
+          <div class="conf-cell" style="color:var(--green)">94%</div>
+          <div><span class="feedback-tag pending">⟳ Pending</span></div>
+          <div class="time-cell">14:22:08</div>
+        </div>
+
+        <div class="alert-row" onclick="selectAlert(this)">
+          <div class="sev-dot" style="background:var(--red);box-shadow:0 0 5px var(--red)"></div>
+          <div class="alert-info">
+            <div class="alert-name">Lateral Movement · PsExec Remote Execution</div>
+            <div class="alert-host">WIN-DC-001 · Morgan Stanley · endpoint</div>
+          </div>
+          <div><span class="sev-tag" style="background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.2)">CRITICAL</span></div>
+          <div><span class="decision-tag" style="background:var(--red-bg);color:var(--red);border:1px solid rgba(239,68,68,0.2)">⚑ True Positive</span></div>
+          <div class="conf-cell" style="color:var(--green)">89%</div>
+          <div><span class="feedback-tag captured">✓ Captured</span></div>
+          <div class="time-cell">14:18:33</div>
+        </div>
+
+        <div class="alert-row" onclick="selectAlert(this)">
+          <div class="sev-dot" style="background:var(--amber);box-shadow:0 0 5px var(--amber)"></div>
+          <div class="alert-info">
+            <div class="alert-name">Suspicious PowerShell Execution · Encoded Command</div>
+            <div class="alert-host">MAC-ENG-0122 · JLL-Corp · endpoint</div>
+          </div>
+          <div><span class="sev-tag" style="background:var(--amber-bg);color:var(--amber);border:1px solid rgba(245,158,11,0.2)">HIGH</span></div>
+          <div><span class="decision-tag" style="background:var(--red-bg);color:var(--red);border:1px solid rgba(239,68,68,0.2)">⚑ True Positive</span></div>
+          <div class="conf-cell" style="color:var(--amber)">71%</div>
+          <div><span class="feedback-tag pending">⟳ Pending</span></div>
+          <div class="time-cell">14:15:47</div>
+        </div>
+
+        <div class="alert-row" onclick="selectAlert(this)">
+          <div class="sev-dot" style="background:var(--amber);box-shadow:0 0 5px var(--amber)"></div>
+          <div class="alert-info">
+            <div class="alert-name">Cloud Storage Exfiltration · Abnormal Upload Volume</div>
+            <div class="alert-host">WIN-FIN-009 · Nationwide · cloud</div>
+          </div>
+          <div><span class="sev-tag" style="background:var(--amber-bg);color:var(--amber);border:1px solid rgba(245,158,11,0.2)">HIGH</span></div>
+          <div><span class="decision-tag" style="background:var(--green-bg);color:var(--green);border:1px solid rgba(16,185,129,0.2)">✓ False Positive</span></div>
+          <div class="conf-cell" style="color:var(--red)">48%</div>
+          <div><span class="feedback-tag captured">✓ Captured</span></div>
+          <div class="time-cell">14:09:12</div>
+        </div>
+
+        <div class="alert-row" onclick="selectAlert(this)">
+          <div class="sev-dot" style="background:var(--amber)"></div>
+          <div class="alert-info">
+            <div class="alert-name">Process Injection · CreateRemoteThread API Call</div>
+            <div class="alert-host">LINUX-SRV-014 · AstraZeneca-EU · endpoint</div>
+          </div>
+          <div><span class="sev-tag" style="background:var(--amber-bg);color:var(--amber);border:1px solid rgba(245,158,11,0.2)">HIGH</span></div>
+          <div><span class="decision-tag" style="background:var(--red-bg);color:var(--red);border:1px solid rgba(239,68,68,0.2)">⚑ True Positive</span></div>
+          <div class="conf-cell" style="color:var(--green)">82%</div>
+          <div><span class="feedback-tag captured">✓ Captured</span></div>
+          <div class="time-cell">13:58:04</div>
+        </div>
+
+        <div class="alert-row" onclick="selectAlert(this)">
+          <div class="sev-dot" style="background:var(--blue)"></div>
+          <div class="alert-info">
+            <div class="alert-name">Scheduled Task Creation · Persistence Mechanism</div>
+            <div class="alert-host">WIN-HR-056 · JLL-Corp · endpoint</div>
+          </div>
+          <div><span class="sev-tag" style="background:var(--blue-bg);color:var(--blue);border:1px solid rgba(59,130,246,0.2)">MEDIUM</span></div>
+          <div><span class="decision-tag" style="background:var(--green-bg);color:var(--green);border:1px solid rgba(16,185,129,0.2)">✓ False Positive</span></div>
+          <div class="conf-cell" style="color:var(--red)">34%</div>
+          <div><span class="feedback-tag captured">✓ Captured</span></div>
+          <div class="time-cell">13:44:51</div>
+        </div>
+
+        <div class="alert-row" onclick="selectAlert(this)">
+          <div class="sev-dot" style="background:var(--blue)"></div>
+          <div class="alert-info">
+            <div class="alert-name">DNS Tunneling · Unusual Query Frequency</div>
+            <div class="alert-host">CLOUD-K8S-003 · Morgan Stanley · cloud</div>
+          </div>
+          <div><span class="sev-tag" style="background:var(--blue-bg);color:var(--blue);border:1px solid rgba(59,130,246,0.2)">MEDIUM</span></div>
+          <div><span class="decision-tag" style="background:var(--s1-glow);color:var(--s1-purple);border:1px solid rgba(139,92,246,0.2)">↑ Escalated</span></div>
+          <div class="conf-cell" style="color:var(--amber)">61%</div>
+          <div><span class="feedback-tag queued">◎ Queued</span></div>
+          <div class="time-cell">13:31:20</div>
+        </div>
+
+        <!-- METRICS STRIP -->
+        <div class="metrics-strip">
+          <div class="metrics-strip-label">ADI Learning Engine — Feedback Loop Performance · Last 30 Days</div>
+          <div class="metrics-grid">
+            <div class="metric-tile">
+              <span class="metric-tile-val purple">1,247</span>
+              <div class="metric-tile-label">Analyst decisions fed back to model</div>
+              <div class="metric-tile-trend up">↑ +312 vs last cycle</div>
+            </div>
+            <div class="metric-tile">
+              <span class="metric-tile-val green">↓ 38%</span>
+              <div class="metric-tile-label">False positive rate reduction per-tenant</div>
+              <div class="metric-tile-trend up">↑ Improving across 847 tenants</div>
+            </div>
+            <div class="metric-tile">
+              <span class="metric-tile-val cyan">18 min</span>
+              <div class="metric-tile-label">Avg MTTR after ADI tuning</div>
+              <div class="metric-tile-trend up">↓ from 26 min (global baseline)</div>
+            </div>
+            <div class="metric-tile">
+              <span class="metric-tile-val amber">847</span>
+              <div class="metric-tile-label">Tenants with active per-tenant tuning</div>
+              <div class="metric-tile-trend up">↑ +124 this cycle</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+      <div class="panel-tabs">
+        <button class="ptab active">ADI Analysis</button>
+        <button class="ptab">Feedback Loop</button>
+        <button class="ptab">Audit</button>
+      </div>
+
+      <div class="panel-body">
+
+        <!-- ALERT DETAIL -->
+        <div class="alert-detail-header">
+          <div class="alert-sev-icon">🔴</div>
+          <div>
+            <div class="alert-detail-name">Credential Dumping via LSASS</div>
+            <div class="alert-host" style="font-family:var(--mono);font-size:10px">WIN-PROD-DB-042 · AstraZeneca-US · 14:22:08 UTC</div>
+          </div>
+        </div>
+
+        <!-- ADI CARD -->
+        <div class="adi-card">
+          <div class="adi-card-header">
+            <span class="adi-card-title">ADI Classification</span>
+            <span class="adi-model-badge">singularity-llm-v4.1</span>
+          </div>
+
+          <div class="conf-ring-wrap">
+            <div class="conf-ring">
+              <svg width="60" height="60" viewBox="0 0 60 60">
+                <circle cx="30" cy="30" r="24" fill="none" stroke="rgba(139,92,246,0.1)" stroke-width="5"/>
+                <circle cx="30" cy="30" r="24" fill="none" stroke="url(#ringGrad)" stroke-width="5"
+                  stroke-dasharray="150.8" stroke-dashoffset="57.3" stroke-linecap="round"/>
+                <defs>
+                  <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#8B5CF6"/>
+                    <stop offset="100%" stop-color="#06B6D4"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div class="conf-ring-val">94%</div>
+            </div>
+            <div class="conf-ring-info">
+              <div class="conf-ring-label">CLASSIFICATION</div>
+              <div class="conf-ring-result">True Positive</div>
+              <div class="conf-ring-sub">Ransomware precursor · ATT&CK T1003.001</div>
+            </div>
+          </div>
+
+          <div class="adi-bars">
+            <div class="adi-bar-row">
+              <div class="adi-bar-label">True Positive</div>
+              <div class="adi-bar-track"><div class="adi-bar-fill" style="width:94%;background:linear-gradient(90deg,var(--s1-purple),var(--cyan))"></div></div>
+              <div class="adi-bar-val" style="color:var(--s1-purple)">94%</div>
+            </div>
+            <div class="adi-bar-row">
+              <div class="adi-bar-label">False Positive</div>
+              <div class="adi-bar-track"><div class="adi-bar-fill" style="width:4%;background:rgba(239,68,68,0.5)"></div></div>
+              <div class="adi-bar-val" style="color:var(--red)">4%</div>
+            </div>
+            <div class="adi-bar-row">
+              <div class="adi-bar-label">Benign Activity</div>
+              <div class="adi-bar-track"><div class="adi-bar-fill" style="width:2%;background:rgba(100,116,139,0.5)"></div></div>
+              <div class="adi-bar-val">2%</div>
+            </div>
+          </div>
+
+          <div class="adi-tags">
+            <span class="atag">CRITICAL</span>
+            <span class="atag">T1003.001</span>
+            <span class="atag">Mimikatz</span>
+            <span class="atag">Ransomware precursor</span>
+            <span class="atag">Isolate recommended</span>
+          </div>
+        </div>
+
+        <!-- FEEDBACK CAPTURE -->
+        <div class="feedback-card">
+          <div class="fc-header">
+            <span class="fc-title">Analyst Decision → ADI Feedback</span>
+            <span class="fc-status"><div class="fc-status-dot"></div>Awaiting decision</span>
+          </div>
+          <div class="fc-body">
+            <div class="decision-btns">
+              <button class="dec-btn tp" onclick="captureDecision('TP')">✓ Confirm TP · Feed back</button>
+              <button class="dec-btn fp" onclick="captureDecision('FP')">✗ Mark FP · Adjust threshold</button>
+              <button class="dec-btn tune" onclick="captureDecision('TUNE')">⟳ Tune · Edge case</button>
+              <button class="dec-btn esc" onclick="captureDecision('ESC')">↑ Escalate · Tier 2</button>
+            </div>
+
+            <div class="feedback-flow-label">Feedback Pipeline</div>
+            <div class="feedback-flow">
+
+              <div class="ff-step">
+                <div class="ff-left">
+                  <div class="ff-dot done">✓</div>
+                  <div class="ff-line done"></div>
+                </div>
+                <div class="ff-content">
+                  <div class="ff-title">Alert classified by Singularity AI</div>
+                  <div class="ff-desc">singularity-llm-v4.1 · 94% confidence · ATT&CK T1003.001 mapped</div>
+                  <div class="ff-time">14:22:08 UTC · 0.3s</div>
+                </div>
+              </div>
+
+              <div class="ff-step">
+                <div class="ff-left">
+                  <div class="ff-dot active">⟳</div>
+                  <div class="ff-line"></div>
+                </div>
+                <div class="ff-content">
+                  <div class="ff-title">Analyst decision capture</div>
+                  <div class="ff-desc">Vigilance analyst reviewing. Decision → ADI feedback pipeline on confirm.</div>
+                  <div class="ff-time active-t">In progress · SLA: 18 min remaining</div>
+                </div>
+              </div>
+
+              <div class="ff-step">
+                <div class="ff-left">
+                  <div class="ff-dot pending">3</div>
+                  <div class="ff-line"></div>
+                </div>
+                <div class="ff-content">
+                  <div class="ff-title">Per-tenant threshold update</div>
+                  <div class="ff-desc">AstraZeneca-US detection baseline adjusted. LSASS sensitivity ++.</div>
+                  <div class="ff-time">Pending analyst decision</div>
+                </div>
+              </div>
+
+              <div class="ff-step">
+                <div class="ff-left">
+                  <div class="ff-dot pending">4</div>
+                  <div class="ff-line"></div>
+                </div>
+                <div class="ff-content">
+                  <div class="ff-title">Behavioral model retrain signal</div>
+                  <div class="ff-desc">Decision queued to Singularity Data Lake retraining batch. Next run: 02:00 UTC.</div>
+                  <div class="ff-time">Pending</div>
+                </div>
+              </div>
+
+              <div class="ff-step">
+                <div class="ff-left">
+                  <div class="ff-dot pending">5</div>
+                </div>
+                <div class="ff-content">
+                  <div class="ff-title">Immutable audit record written</div>
+                  <div class="ff-desc">Decision · analyst ID · confidence delta · timestamp → compliance log.</div>
+                  <div class="ff-time">Pending</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- LEARNING ENGINE -->
+        <div class="learning-card">
+          <div class="lc-header">
+            <span class="lc-title">Per-Tenant Learning Engine</span>
+            <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+          </div>
+          <div class="lc-body">
+            <div class="tenant-row">
+              <div class="tenant-name">AstraZeneca-US</div>
+              <div class="tenant-bar-wrap"><div class="tenant-bar-track"><div class="tenant-bar-fill" style="width:78%"></div></div></div>
+              <div class="tenant-fp-delta">↓ 42% FP</div>
+            </div>
+            <div class="tenant-row">
+              <div class="tenant-name">Morgan Stanley</div>
+              <div class="tenant-bar-wrap"><div class="tenant-bar-track"><div class="tenant-bar-fill" style="width:65%"></div></div></div>
+              <div class="tenant-fp-delta">↓ 35% FP</div>
+            </div>
+            <div class="tenant-row">
+              <div class="tenant-name">JLL Corporation</div>
+              <div class="tenant-bar-wrap"><div class="tenant-bar-track"><div class="tenant-bar-fill" style="width:54%"></div></div></div>
+              <div class="tenant-fp-delta">↓ 29% FP</div>
+            </div>
+            <div class="tenant-row">
+              <div class="tenant-name">Nationwide</div>
+              <div class="tenant-bar-wrap"><div class="tenant-bar-track"><div class="tenant-bar-fill" style="width:40%"></div></div></div>
+              <div class="tenant-fp-delta">↓ 21% FP</div>
+            </div>
+
+            <div class="learning-summary">
+              <div class="ls-row">
+                <div class="ls-label">Decisions this cycle</div>
+                <div class="ls-val">1,247</div>
+              </div>
+              <div class="ls-row">
+                <div class="ls-label">Model retrain runs</div>
+                <div class="ls-val cyan">14</div>
+              </div>
+              <div class="ls-row">
+                <div class="ls-label">Avg FP delta per tenant</div>
+                <div class="ls-val green">↓ 38%</div>
+              </div>
+              <div class="ls-row">
+                <div class="ls-label">Next retrain batch</div>
+                <div class="ls-val">02:00 UTC</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AUDIT FEED -->
+        <div class="audit-feed">
+          <div class="af-header">
+            <span class="af-title">Decision Audit Trail</span>
+            <span style="font-size:9.5px;color:var(--txt3);font-family:var(--mono)">Immutable · SOC 2 compliant</span>
+          </div>
+          <div class="af-body">
+            <div class="af-row">
+              <div class="af-time">14:22:08</div>
+              <div class="af-event">Alert classified — <strong>TP 94%</strong> · LSASS · ATT&CK T1003.001 · awaiting analyst</div>
+              <div class="af-actor ai">AI</div>
+            </div>
+            <div class="af-row">
+              <div class="af-time">14:18:41</div>
+              <div class="af-event">Decision captured — <strong>TP confirmed</strong> · Lateral Movement · PsExec · feedback queued</div>
+              <div class="af-actor analyst">Analyst</div>
+            </div>
+            <div class="af-row">
+              <div class="af-time">14:09:18</div>
+              <div class="af-event">Decision captured — <strong>FP marked</strong> · Cloud Exfil · Nationwide tenant threshold adjusted</div>
+              <div class="af-actor analyst">Analyst</div>
+            </div>
+            <div class="af-row">
+              <div class="af-time">14:02:00</div>
+              <div class="af-event">Retraining signal written to <strong>Singularity Data Lake</strong> · 847 tenant deltas batched</div>
+              <div class="af-actor sys">SYS</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STATUS BAR -->
+<div class="statusbar">
+  <div class="sb2-item"><div class="sb2-dot green"></div>Singularity AI healthy · singularity-llm-v4.1</div>
+  <div class="sb2-item"><div class="sb2-dot purple"></div>ADI learning engine active · 847 tenants</div>
+  <div class="sb2-item"><div class="sb2-dot amber"></div>4 decisions pending in queue</div>
+  <div style="margin-left:auto;font-size:9.5px;color:var(--txt3);font-family:var(--mono)">Singularity XDR · TDR · Region: US-East · Tenant: Global MDR</div>
+</div>
+
+<!-- DECISION MODAL -->
+<div class="modal-overlay" id="decisionModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">⚡ Analyst Decision — ADI Feedback Capture</div>
+      <button class="modal-close" onclick="document.getElementById('decisionModal').classList.remove('show')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-alert-info">
+        <div class="modal-sev-icon">🔴</div>
+        <div>
+          <div class="modal-alert-name">Credential Dumping via LSASS · Mimikatz Signature</div>
+          <div class="modal-alert-meta">WIN-PROD-DB-042 · AstraZeneca-US · 14:22:08 UTC · singularity-llm-v4.1 · 94% confidence</div>
+        </div>
+      </div>
+
+      <div class="modal-section-label">AI Reasoning</div>
+      <div class="modal-ai-reason">
+        "LSASS access pattern matches known Mimikatz dump signature (T1003.001). Process lineage: explorer.exe → cmd.exe → procdump.exe accessing lsass.exe. SeDebugPrivilege escalation detected 4.2s prior. Cross-correlated with Storyline ID #SL-20847. High confidence ransomware precursor based on 34,000+ historical Storyline patterns. Recommend immediate endpoint isolation."
+      </div>
+
+      <div class="modal-section-label" style="margin-bottom:10px">Your Decision → feeds directly into ADI per-tenant model</div>
+      <div class="modal-decision-grid">
+        <button class="modal-dec-btn tp" onclick="document.getElementById('decisionModal').classList.remove('show')">✓ Confirm TP — reinforce signal</button>
+        <button class="modal-dec-btn fp" onclick="document.getElementById('decisionModal').classList.remove('show')">✗ Mark FP — adjust threshold</button>
+        <button class="modal-dec-btn tune" onclick="document.getElementById('decisionModal').classList.remove('show')">⟳ Tune — edge case, partial signal</button>
+        <button class="modal-dec-btn esc" onclick="document.getElementById('decisionModal').classList.remove('show')">↑ Escalate — Tier 2 review</button>
+      </div>
+
+      <div class="modal-feedback-note">
+        Your decision is <strong>automatically captured</strong> and fed back to the <strong>Singularity Data Lake</strong>. AstraZeneca-US per-tenant detection thresholds update in the next retraining batch (02:00 UTC). Every decision reduces false positive rate for this tenant over time.
+      </div>
+    </div>
+    <div class="modal-foot">
+      <div class="modal-foot-note">Immutable record written on submit · Analyst: ST · SLA: 18 min remaining</div>
+      <button class="btn" onclick="document.getElementById('decisionModal').classList.remove('show')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function selectAlert(el) {
+  document.querySelectorAll('.alert-row').forEach(r => r.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function captureDecision(type) {
+  const labels = { TP: '✓ TP Confirmed', FP: '✗ FP Marked', TUNE: '⟳ Tuned', ESC: '↑ Escalated' };
+  const colors = { TP: 'var(--green)', FP: 'var(--red)', TUNE: 'var(--amber)', ESC: 'var(--s1-purple)' };
+  const firstRow = document.querySelector('.alert-row.selected');
+  if (firstRow) {
+    const fb = firstRow.querySelector('.feedback-tag');
+    if (fb) {
+      fb.className = 'feedback-tag captured';
+      fb.textContent = '✓ Captured';
+    }
+  }
+  // update step 2 to done
+  const steps = document.querySelectorAll('.ff-dot');
+  if (steps[1]) {
+    steps[1].className = 'ff-dot done';
+    steps[1].textContent = '✓';
+  }
+  const lines = document.querySelectorAll('.ff-line');
+  if (lines[1]) lines[1].classList.add('done');
+  if (steps[2]) {
+    steps[2].className = 'ff-dot active';
+  }
+  document.querySelector('.fc-status').innerHTML = '<div class="fc-status-dot" style="background:var(--green);box-shadow:0 0 4px var(--green)"></div>Decision captured — feeding to ADI';
+  document.querySelector('.fc-status').style.color = 'var(--green)';
+}
+
+// Animate confidence bars on load
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.querySelectorAll('.adi-bar-fill, .tenant-bar-fill').forEach(el => {
+      const w = el.style.width;
+      el.style.width = '0%';
+      setTimeout(() => { el.style.width = w; }, 150);
+    });
+  }, 400);
+});
+</script>
+</body>
+</html>
